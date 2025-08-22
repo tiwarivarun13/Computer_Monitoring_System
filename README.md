@@ -1,4 +1,5 @@
 
+````markdown
 # Monitoring System
 
 A lightweight monitoring solution that collects **system information** and **running processes** from multiple hosts using a Monitoring System agent. The data is posted to a **Django REST Framework (DRF)** API and displayed in a **FRONTEND dashboard**.
@@ -16,8 +17,6 @@ A lightweight monitoring solution that collects **system information** and **run
 - Monitoring System agent can be converted to a `.exe` for Windows deployment.
 
 ---
-
-
 
 ## Requirements
 
@@ -39,14 +38,25 @@ A lightweight monitoring solution that collects **system information** and **run
 
 ## Setup
 
+### 0. Create Virtual Environment (Recommended)
+```bash
+python -m venv venv
+# Activate the environment
+# Windows
+venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
+````
+
 ### 1. Backend (DRF API)
+
 ```bash
 cd api
 pip install django djangorestframework djangorestframework-api-key
 python manage.py makemigrations
 python manage.py migrate
 python manage.py runserver
-````
+```
 
 The API will start on `http://127.0.0.1:8000/`.
 
