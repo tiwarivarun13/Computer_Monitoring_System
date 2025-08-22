@@ -45,7 +45,7 @@ def get_process_tree():
     return root_processes
 
 def get_system_info():
-    hostname = f"Host-{random.randint(1,100)}"
+    hostname = socket.gethostname()
     system = platform.system()
     processor = platform.processor()
     cpu_percent = psutil.cpu_percent(interval=1)
