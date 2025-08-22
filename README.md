@@ -17,26 +17,7 @@ A lightweight monitoring solution that collects **system information** and **run
 
 ---
 
-## Project Structure
-```
 
-project/
-│
-├── backend/                 # Django REST Framework API
-│   ├── manage.py
-│   ├── monitoring/          # Django app with models & views
-│   └── db.sqlite3           # SQLite database
-│
-├── FRONTEND/                # Frontend files
-│   └── index.html
-│
-├── monitoring\_system.py     # Agent that runs on client machines
-│
-├── README.md                # Documentation
-
-````
-
----
 
 ## Requirements
 
