@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>System Monitor Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f4f9;
+    }
+
+    .navbar {
+      background: #2c3e50;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .navbar h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .navbar .nav-links button {
+      margin-left: 10px;
+      padding: 6px 12px;
+      border: none;
+      background: #34495e;
+      color: white;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .navbar .nav-links button.active {
+      background: #1abc9c;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    tr.child-row {
+      display: none;
+      background: #ffccaaff;
+    }
+
+    button.toggle-btn {
+      padding: 2px 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <h1 id="hostname">Loading Host...</h1>
+    <div class="nav-links">
+      <button id="btn-system" type="button">System Info</button>
+      <button id="btn-processes" type="button">Process Details</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="container">
+    <div id="system-card" class="card" style="display:none;"></div>
+    <div id="process-card" class="card" style="display:none;"></div>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000/api";
+    const HOST_ID = 1; // change dynamically if you have multiple hosts
+
+    const hostnameEl = document.getElementById("hostname");
+    const systemCard = document.getElementById("system-card");
+    const processCard = document.getElementById("process-card");
+
+    const btnSystem = document.getElementById("btn-system");
+    const btnProcesses = document.getElementById("btn-processes");
+
+    // Load hostname immediately on page load
+    async function loadHostname() {
+      try {
+        const res = await fetch(`${API_BASE}/hosts/${HOST_ID}/`);
+        const data = await res.json();
+        hostnameEl.textContent = `Hostname: ${data.hostname}`;
+      } catch (err) {
+        console.error("Error fetching hostname:", err);
+        hostnameEl.textContent = "Hostname: N/A";
+      }
+    }
+
+    // Load system info into table
+    async function loadSystem() {
+      try {
+        const res = await fetch(`${API_BASE}/hosts/${HOST_ID}/`);
+        const data = await res.json();
+
+        systemCard.innerHTML = `
+          <h2>System Information</h2>
+          <table>
+            <tr><th>OS</th><td>${data.operating_system}</td></tr>
+            <tr><th>Processor</th><td>${data.processor}</td></tr>
+            <tr><th>Cores</th><td>${data.num_cores}</td></tr>
+            <tr><th>Threads</th><td>${data.num_threads}</td></tr>
+            <tr><th>RAM Total</th><td>${(data.ram_total/1024/1024/1024).toFixed(2)} GB</td></tr>
+            <tr><th>RAM Used</th><td>${(data.ram_used/1024/1024/1024).toFixed(2)} GB</td></tr>
+            <tr><th>RAM Available</th><td>${(data.ram_available/1024/1024/1024).toFixed(2)} GB</td></tr>
+            <tr><th>Storage Total</th><td>${(data.storage_total/1024/1024/1024).toFixed(2)} GB</td></tr>
+            <tr><th>Storage Used</th><td>${(data.storage_used/1024/1024/1024).toFixed(2)} GB</td></tr>
+            <tr><th>Storage Free</th><td>${(data.storage_free/1024/1024/1024).toFixed(2)} GB</td></tr>
+          </table>
+        `;
+      } catch (err) {
+        console.error("Error fetching system info:", err);
+        systemCard.innerHTML = "<p>Error loading system info.</p>";
+      }
+    }
+
+    // Load process tree into table
+    async function loadProcesses() {
+      try {
+        const res = await fetch(`${API_BASE}/hosts/${HOST_ID}/processes/`);
+        const data = await res.json();
+
+        processCard.innerHTML = `
+          <h2>Process Details</h2>
+          <table id="processTable">
+            <thead>
+              <tr>
+                <th></th>
+                <th>PID</th>
+                <th>Name</th>
+                <th>CPU %</th>
+                <th>Memory MB</th>
+              </tr>
+            </thead>
+            <tbody id="processBody"></tbody>
+          </table>
+        `;
+
+        const tbody = document.getElementById("processBody");
+        data.processes.forEach(proc => {
+          addProcessRow(proc, tbody);
+        });
+      } catch (err) {
+        console.error("Error fetching processes:", err);
+        processCard.innerHTML = "<p>Error loading processes.</p>";
+      }
+    }
+
+    // Add process rows recursively
+    function addProcessRow(proc, tbody, parentPid = null, level = 0) {
+      const row = document.createElement("tr");
+      row.dataset.pid = proc.pid;
+      row.dataset.parent = parentPid || "";
+      if (parentPid) row.classList.add("child-row");
+
+      let toggleBtn = "";
+      if (proc.children && proc.children.length > 0) {
+        toggleBtn = `<button class="toggle-btn" onclick="toggleChildren(${proc.pid}, this)">+</button>`;
+      }
+
+      row.innerHTML = `
+        <td>${toggleBtn}</td>
+        <td>${proc.pid}</td>
+        <td style="padding-left:${level * 20}px">${proc.name}</td>
+        <td>${proc.cpu_usage || 0}</td>
+        <td>${proc.memory_usage || 0}</td>
+      `;
+
+      tbody.appendChild(row);
+
+      if (proc.children) {
+        proc.children.forEach(child => addProcessRow(child, tbody, proc.pid, level + 1));
+      }
+    }
+
+    // Toggle child visibility
+   function toggleChildren(pid, btn, forceCollapse = false) {
+  const rows = document.querySelectorAll(`tr[data-parent='${pid}']`);
+  const show = forceCollapse ? false : btn.textContent === "+";
+  btn.textContent = show ? "−" : "+";
+
+  rows.forEach(r => {
+    if (show) {
+      r.style.display = "table-row";
+    } else {
+      r.style.display = "none";
+      const childBtn = r.querySelector(".toggle-btn");
+      if (childBtn) childBtn.textContent = "+";
+      toggleChildren(r.dataset.pid, { textContent: "+" }, true); // collapse nested
+    }
+  });
+}
+
+
+    // Navbar buttons
+    btnSystem.addEventListener("click", async () => {
+      btnSystem.classList.add("active");
+      btnProcesses.classList.remove("active");
+      systemCard.style.display = "block";
+      processCard.style.display = "none";
+      await loadSystem();
+    });
+
+    btnProcesses.addEventListener("click", async () => {
+      btnProcesses.classList.add("active");
+      btnSystem.classList.remove("active");
+      systemCard.style.display = "none";
+      processCard.style.display = "block";
+      await loadProcesses();
+    });
+
+    // Initial load: only fetch hostname
+    loadHostname();
+  </script>
+
+</body>
+</html>
