@@ -41,7 +41,7 @@ A lightweight monitoring solution that collects **system information** and **run
 
 ### 1. Backend (DRF API)
 ```bash
-cd backend
+cd api
 pip install django djangorestframework djangorestframework-api-key
 python manage.py makemigrations
 python manage.py migrate
