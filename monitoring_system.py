@@ -5,6 +5,7 @@ import socket
 import platform
 import time
 import shutil
+import random
 
 # ---------------- CONFIG ----------------
 API_URL = "http://127.0.0.1:8000/api/ingest/"   # Django ingest endpoint
@@ -44,7 +45,7 @@ def get_process_tree():
     return root_processes
 
 def get_system_info():
-    hostname = socket.gethostname()
+    hostname = f"Host-{random.randint(1,100)}"
     system = platform.system()
     processor = platform.processor()
     cpu_percent = psutil.cpu_percent(interval=1)
